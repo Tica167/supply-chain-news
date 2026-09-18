@@ -61,13 +61,21 @@ function cleanTitle(title, source) {
   return title.trim();
 }
 
+function formatDate(d) {
+  return d.toISOString().slice(0, 10);
+}
+
 async function fetchGroupNews(group) {
-  const query = encodeURIComponent(GROUP_QUERIES[group]);
+  const today = new Date();
+  const monthAgo = new Date();
+  monthAgo.setDate(monthAgo.getDate() - 30);
+
+  const query = encodeURIComponent(`${GROUP_QUERIES[group]} after:${formatDate(monthAgo)} before:${formatDate(today)}`);
   const url = `https://news.google.com/rss/search?q=${query}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
   if (!res.ok) throw new Error(`Google 新聞錯誤：${res.status}`);
   const xml = await res.text();
-  const items = parseRssItems(xml).slice(0, 8);
+  const items = parseRssItems(xml);
 
   return items.map((item, i) => {
     const title = cleanTitle(item.title, item.source);

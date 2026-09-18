@@ -104,25 +104,79 @@ function renderFilterBar(activeType) {
   `;
 }
 
+function renderSearchBox(term) {
+  return `
+    <div class="search-box">
+      <input type="search" id="news-search" class="search-input" placeholder="搜尋新聞標題關鍵字…" aria-label="搜尋新聞標題" value="${term}" />
+    </div>
+  `;
+}
+
+function renderPagination(currentPage, totalPages) {
+  if (totalPages <= 1) return "";
+  let buttons = "";
+  for (let p = 1; p <= totalPages; p++) {
+    buttons += `<button class="page-btn" data-page="${p}" aria-current="${p === currentPage}">${p}</button>`;
+  }
+  return `<nav class="pagination" aria-label="分頁">${buttons}</nav>`;
+}
+
+const CATEGORY_PAGE_SIZE = 9;
+
 function initCategoryPage(group) {
   const listEl = document.getElementById("news-list");
   const filterBarEl = document.getElementById("filter-bar");
-  const groupNews = NEWS.filter((n) => n.group === group).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  const searchBarEl = document.getElementById("search-bar");
+  const paginationEl = document.getElementById("pagination");
 
   let activeType = "all";
+  let searchTerm = "";
+  let currentPage = 1;
+
+  function getFilteredNews() {
+    const groupNews = NEWS.filter((n) => n.group === group).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+    const term = searchTerm.trim().toLowerCase();
+    return groupNews.filter((n) => {
+      const typeMatch = activeType === "all" || n.type === activeType;
+      const searchMatch = !term || n.title.toLowerCase().includes(term);
+      return typeMatch && searchMatch;
+    });
+  }
 
   function render() {
     filterBarEl.innerHTML = renderFilterBar(activeType);
-    const filtered = activeType === "all" ? groupNews : groupNews.filter((n) => n.type === activeType);
-    listEl.innerHTML = renderNewsGrid(filtered);
+
+    const filtered = getFilteredNews();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / CATEGORY_PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const pageItems = filtered.slice((currentPage - 1) * CATEGORY_PAGE_SIZE, currentPage * CATEGORY_PAGE_SIZE);
+
+    listEl.innerHTML = renderNewsGrid(pageItems);
+    paginationEl.innerHTML = renderPagination(currentPage, totalPages);
 
     filterBarEl.querySelectorAll(".filter-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         activeType = btn.dataset.type;
+        currentPage = 1;
         render();
       });
     });
+
+    paginationEl.querySelectorAll(".page-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentPage = Number(btn.dataset.page);
+        render();
+        listEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   }
+
+  searchBarEl.innerHTML = renderSearchBox(searchTerm);
+  document.getElementById("news-search").addEventListener("input", (e) => {
+    searchTerm = e.target.value;
+    currentPage = 1;
+    render();
+  });
 
   render();
 }

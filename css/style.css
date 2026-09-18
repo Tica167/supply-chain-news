@@ -338,6 +338,59 @@ img { max-width: 100%; display: block; }
 }
 
 /* ==========================================================================
+   搜尋框
+   ========================================================================== */
+.search-box {
+  margin-bottom: var(--space-3);
+}
+.search-input {
+  width: 100%;
+  max-width: 360px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.9rem;
+  color: var(--color-text-primary);
+  font-family: inherit;
+}
+.search-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* ==========================================================================
+   分頁
+   ========================================================================== */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+.page-btn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  min-width: 36px;
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+.page-btn:hover {
+  border-color: var(--color-accent);
+}
+.page-btn[aria-current="true"] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* ==========================================================================
    篩選按鈕列
    ========================================================================== */
 .filter-bar {
