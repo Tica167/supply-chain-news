@@ -1,8 +1,11 @@
 const express = require("express");
+const AdmZip = require("adm-zip");
 const router = express.Router();
 
 const TW_ECON_URL = "https://apiservice.mol.gov.tw/OdService/download/A17030000J-000016-xC8";
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
+const NDC_DATASET_META_URL = "https://data.gov.tw/api/v2/rest/dataset/6099";
+const LIGHT_ICONS = { 紅: "🔴", 黃紅: "🟠", 綠: "🟢", 黃藍: "🟡", 藍: "🔵" };
 
 function periodFromYyyymm(yyyymm) {
   return `${yyyymm.slice(0, 4)}-${yyyymm.slice(4, 6)}`;
@@ -68,6 +71,40 @@ async function fetchTwEconIndicators() {
   ];
 }
 
+// 台灣景氣對策信號（國發會，data.gov.tw dataset 6099，資料包成 ZIP，裡面是 CSV）
+async function fetchBusinessSignal() {
+  const metaRes = await fetch(NDC_DATASET_META_URL);
+  if (!metaRes.ok) throw new Error(`景氣對策信號中繼資料錯誤：${metaRes.status}`);
+  const meta = await metaRes.json();
+  const downloadUrl = meta.result.distribution[0].resourceDownloadUrl;
+
+  const res = await fetch(downloadUrl);
+  if (!res.ok) throw new Error(`景氣對策信號下載錯誤：${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+
+  const zip = new AdmZip(buf);
+  const entry = zip.getEntries().find((e) => e.entryName === "景氣指標與燈號.csv");
+  if (!entry) throw new Error("景氣對策信號找不到資料檔案");
+
+  const text = entry.getData().toString("utf8").replace(/^﻿/, "");
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  const lastCols = lines[lines.length - 1].split(",").map((v) => v.replace(/^"|"$/g, "").trim());
+
+  const period = lastCols[0];
+  const light = lastCols[8];
+  if (!/^\d{6}$/.test(period) || !light) throw new Error("景氣對策信號資料格式異常");
+
+  return {
+    id: "business-signal-tw",
+    region: "TW",
+    name: "景氣對策信號",
+    value: `${LIGHT_ICONS[light] || ""} ${light}燈`,
+    trend: "flat",
+    period: periodFromYyyymm(period),
+    isDemo: false,
+  };
+}
+
 // 美國 CPI / PPI / GDP / 聯邦基金利率（FRED，需要金鑰）
 async function fetchFredSeries(seriesId, apiKey, { units } = {}) {
   const params = new URLSearchParams({
@@ -120,7 +157,10 @@ router.get("/", async (req, res) => {
   const fredKey = process.env.FRED_API_KEY;
   const results = { indicators: [], errors: [] };
 
-  const tasks = [{ label: "台灣經濟指標", run: fetchTwEconIndicators }];
+  const tasks = [
+    { label: "台灣經濟指標", run: fetchTwEconIndicators },
+    { label: "景氣對策信號", run: fetchBusinessSignal },
+  ];
   if (!fredKey) {
     results.errors.push("美國經濟指標：尚未設定 FRED_API_KEY，請到 server/.env 填入金鑰");
   } else {

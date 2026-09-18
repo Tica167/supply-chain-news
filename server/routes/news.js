@@ -12,7 +12,7 @@ const GROUP_LABELS = {
 // Bing 新聞 RSS 不支援「OR」多關鍵字合併查詢，所以每個關鍵字要分開查，
 // 結果合併後再去重
 const GROUP_KEYWORDS = {
-  processor: ["處理器", "CPU", "英特爾", "AMD", "輝達"],
+  processor: ["處理器", "CPU", "英特爾", "AMD", "輝達", "Nvidia", "Intel"],
   network: ["網卡晶片", "網通晶片", "交換器晶片", "光通訊模組", "Marvell", "Broadcom"],
   memory: ["記憶體", "DRAM", "NAND", "固態硬碟", "SK海力士", "美光"],
   packaging: ["半導體封測", "先進封裝", "CoWoS", "日月光", "矽品"],
@@ -31,6 +31,17 @@ function classifyType(title) {
   if (SUPPLY_DEMAND_KEYWORDS.some((k) => title.includes(k))) return "supply-demand";
   if (STOCK_KEYWORDS.some((k) => title.includes(k))) return "stock-analysis";
   return "market-analysis";
+}
+
+// 標題可能同時出現多個群組的關鍵字（例如 Broadcom 的新聞標題也提到輝達），
+// 用固定優先順序重新判斷最終歸屬的群組，而不是只看是被哪個群組的查詢抓到的
+const GROUP_PRIORITY = ["processor", "wafer", "memory", "packaging", "network"];
+
+function detectFinalGroup(title, originGroup) {
+  for (const g of GROUP_PRIORITY) {
+    if (GROUP_KEYWORDS[g].some((k) => title.includes(k))) return g;
+  }
+  return originGroup;
 }
 
 function decodeEntities(str) {
@@ -119,19 +130,7 @@ async function fetchGroupNews(group) {
     throw settled[0].reason;
   }
 
-  const seen = new Set();
-  const deduped = merged.filter((item) => {
-    if (seen.has(item.url)) return false;
-    seen.add(item.url);
-    return true;
-  });
-
-  deduped.sort((a, b) => (a.date < b.date ? 1 : -1));
-  deduped.forEach((item, i) => {
-    item.id = `${group}-${i}-${Date.now()}`;
-  });
-
-  return deduped;
+  return merged;
 }
 
 router.get("/", async (req, res) => {
@@ -139,15 +138,34 @@ router.get("/", async (req, res) => {
   const results = { news: [], errors: [] };
 
   const settled = await Promise.allSettled(groups.map((group) => fetchGroupNews(group)));
+  const allItems = [];
   settled.forEach((outcome, i) => {
     const group = groups[i];
     if (outcome.status === "fulfilled") {
-      results.news.push(...outcome.value);
+      allItems.push(...outcome.value);
     } else {
       results.errors.push(`${GROUP_LABELS[group]}新聞：${outcome.reason.message}`);
     }
   });
 
+  // 同一篇新聞可能被多個群組的關鍵字查詢重複抓到，先用真實網址跨群組去重，
+  // 再依標題重新判斷最終該歸屬的群組
+  const seen = new Set();
+  const deduped = allItems.filter((item) => {
+    if (seen.has(item.url)) return false;
+    seen.add(item.url);
+    return true;
+  });
+  deduped.forEach((item) => {
+    item.group = detectFinalGroup(item.title, item.group);
+  });
+
+  deduped.sort((a, b) => (a.date < b.date ? 1 : -1));
+  deduped.forEach((item, i) => {
+    item.id = `${item.group}-${i}-${Date.now()}`;
+  });
+
+  results.news = deduped;
   res.json(results);
 });
 
