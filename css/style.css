@@ -417,16 +417,13 @@ img { max-width: 100%; display: block; }
   border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--space-1);
   margin-bottom: var(--space-1);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1);
 }
 .snapshot-updated {
+  display: block;
   font-size: 0.6rem;
   font-weight: 300;
   color: var(--color-text-tertiary);
-  white-space: nowrap;
+  margin: -4px 0 var(--space-1);
 }
 .snapshot-list {
   list-style: none;

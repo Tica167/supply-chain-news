@@ -170,7 +170,8 @@ function renderMarketSnapshot() {
       <p class="snapshot-desc">匯率／經濟指標／市場情緒</p>
 
       <div class="snapshot-group">
-        <h3>今日匯率 <span class="snapshot-updated">更新：${RATES_META.updatedAt}</span></h3>
+        <h3>今日匯率</h3>
+        <span class="snapshot-updated">更新：${RATES_META.updatedAt}</span>
         <ul class="snapshot-list">${EXCHANGE_RATES.map(renderSnapshotRateRow).join("")}</ul>
       </div>
 
