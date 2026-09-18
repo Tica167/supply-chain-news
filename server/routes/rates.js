@@ -7,6 +7,12 @@ function round(n, digits) {
   return Number(n.toFixed(digits));
 }
 
+// Yahoo 回傳的是 UTC 時間戳，這裡轉成台灣時間（UTC+8，無夏令時）再顯示
+function formatTaipeiTime(unixSeconds) {
+  const taipei = new Date((unixSeconds + 8 * 3600) * 1000);
+  return taipei.toISOString().slice(0, 16).replace("T", " ");
+}
+
 async function fetchQuote(symbol) {
   const res = await fetch(`${YAHOO_BASE}/${symbol}?range=1d&interval=15m`, {
     headers: { "User-Agent": "Mozilla/5.0" },
@@ -31,7 +37,7 @@ router.get("/", async (req, res) => {
     const prevJpyTwd = usdTwdQuote.prevClose / usdJpyQuote.prevClose;
 
     const latestTime = Math.max(usdTwdQuote.time, usdJpyQuote.time);
-    const updateDate = new Date(latestTime * 1000).toISOString().slice(0, 16).replace("T", " ");
+    const updateDate = formatTaipeiTime(latestTime);
 
     const payload = [
       {
@@ -63,7 +69,7 @@ router.get("/", async (req, res) => {
       },
     ];
 
-    res.json({ rates: payload, updatedAt: `${updateDate}（Yahoo Finance，即時盤中報價）` });
+    res.json({ rates: payload, updatedAt: `${updateDate} 台灣時間（Yahoo Finance，即時盤中報價）` });
   } catch (err) {
     res.status(502).json({ error: err.message });
   }
