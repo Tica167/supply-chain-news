@@ -12,6 +12,7 @@ const GROUP_LABELS = {
 
 const TYPE_LABELS = {
   "market-analysis": "市場分析",
+  "stock-analysis": "股市分析",
   "supply-demand": "供需",
   "new-product": "新品發表",
 };

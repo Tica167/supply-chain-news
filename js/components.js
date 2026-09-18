@@ -87,15 +87,35 @@ function renderFilterBar(activeType) {
   const options = [
     { type: "all", label: "全部" },
     { type: "market-analysis", label: "市場分析" },
+    { type: "stock-analysis", label: "股市分析" },
     { type: "supply-demand", label: "供需" },
     { type: "new-product", label: "新品發表" },
   ];
   return `
-    <div class="filter-bar" role="group" aria-label="新聞類型篩選">
+    <div class="filter-bar type-filter-bar" role="group" aria-label="新聞類型篩選">
       ${options
         .map(
           (opt) => `
         <button class="filter-btn" data-type="${opt.type}" aria-pressed="${opt.type === activeType}">
+          ${opt.label}
+        </button>`
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderDateFilterBar(activeRange) {
+  const options = [
+    { range: "all", label: "全部" },
+    { range: "recent3", label: "近三天" },
+  ];
+  return `
+    <div class="filter-bar date-filter-bar" role="group" aria-label="時間範圍篩選">
+      ${options
+        .map(
+          (opt) => `
+        <button class="filter-btn" data-range="${opt.range}" aria-pressed="${opt.range === activeRange}">
           ${opt.label}
         </button>`
         )
@@ -161,6 +181,7 @@ function initCategoryPage(group) {
   const paginationEl = document.getElementById("pagination");
 
   let activeType = "all";
+  let activeRange = "all";
   let searchTerm = "";
   let currentPage = 1;
 
@@ -168,16 +189,19 @@ function initCategoryPage(group) {
     const groupNews = NEWS.filter((n) => n.group === group).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
     const term = searchTerm.trim();
     const searchTerms = term ? expandSearchTerms(term) : [];
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
     return groupNews.filter((n) => {
       const typeMatch = activeType === "all" || n.type === activeType;
       const titleLower = n.title.toLowerCase();
       const searchMatch = !term || searchTerms.some((t) => titleLower.includes(t));
-      return typeMatch && searchMatch;
+      const dateMatch = activeRange === "all" || (n.date && new Date(n.date) >= threeDaysAgo);
+      return typeMatch && searchMatch && dateMatch;
     });
   }
 
   function render() {
-    filterBarEl.innerHTML = renderFilterBar(activeType);
+    filterBarEl.innerHTML = renderDateFilterBar(activeRange) + renderFilterBar(activeType);
 
     const filtered = getFilteredNews();
     const totalPages = Math.max(1, Math.ceil(filtered.length / CATEGORY_PAGE_SIZE));
@@ -187,7 +211,15 @@ function initCategoryPage(group) {
     listEl.innerHTML = renderNewsGrid(pageItems);
     paginationEl.innerHTML = renderPagination(currentPage, totalPages);
 
-    filterBarEl.querySelectorAll(".filter-btn").forEach((btn) => {
+    filterBarEl.querySelectorAll(".date-filter-bar .filter-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activeRange = btn.dataset.range;
+        currentPage = 1;
+        render();
+      });
+    });
+
+    filterBarEl.querySelectorAll(".type-filter-bar .filter-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         activeType = btn.dataset.type;
         currentPage = 1;

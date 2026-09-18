@@ -21,10 +21,15 @@ const GROUP_KEYWORDS = {
 
 const NEW_PRODUCT_KEYWORDS = ["發表", "推出", "亮相", "上市", "發布", "問世", "量產", "首發"];
 const SUPPLY_DEMAND_KEYWORDS = ["缺貨", "供應", "需求", "庫存", "產能", "缺口", "漲價", "拉貨", "訂單", "稼動率"];
+const STOCK_KEYWORDS = [
+  "股價", "股票", "股市", "大漲", "大跌", "收盤", "開盤", "盤中", "ADR",
+  "台股", "美股", "漲停", "跌停", "市值", "本益比", "法人", "外資",
+];
 
 function classifyType(title) {
   if (NEW_PRODUCT_KEYWORDS.some((k) => title.includes(k))) return "new-product";
   if (SUPPLY_DEMAND_KEYWORDS.some((k) => title.includes(k))) return "supply-demand";
+  if (STOCK_KEYWORDS.some((k) => title.includes(k))) return "stock-analysis";
   return "market-analysis";
 }
 
