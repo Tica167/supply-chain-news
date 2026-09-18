@@ -1,10 +1,28 @@
 const express = require("express");
 const AdmZip = require("adm-zip");
+const https = require("https");
 const router = express.Router();
+
+// ws.dgbas.gov.tw 的憑證鏈結不完整，Node 內建 fetch 會嚴格拒絕（UNABLE_TO_VERIFY_LEAF_SIGNATURE），
+// 但瀏覽器通常會容忍。這裡只針對這一個政府統計網域關閉憑證驗證，僅用於讀取公開統計數字，
+// 不涉及任何帳密或敏感資料
+function fetchInsecure(url) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, { rejectUnauthorized: false }, (res) => {
+        const chunks = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => resolve({ ok: res.statusCode < 400, status: res.statusCode, text: async () => Buffer.concat(chunks).toString("utf8") }));
+      })
+      .on("error", reject);
+  });
+}
 
 const TW_ECON_URL = "https://apiservice.mol.gov.tw/OdService/download/A17030000J-000016-xC8";
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
 const NDC_DATASET_META_URL = "https://data.gov.tw/api/v2/rest/dataset/6099";
+const DGBAS_GDP_META_URL = "https://data.gov.tw/api/v2/rest/dataset/6799";
+const GDP_ITEM_NAME = "經濟成長率(%)";
 const LIGHT_ICONS = { 紅: "🔴", 黃紅: "🟠", 綠: "🟢", 黃藍: "🟡", 藍: "🔵" };
 
 function periodFromYyyymm(yyyymm) {
@@ -36,9 +54,8 @@ async function fetchTwEconIndicators() {
 
   const cpi = extractLatestNumeric(records, 14); // 消費者物價指數-年增率
   const ppi = extractLatestNumeric(records, 12); // 生產者物價指數-年增率
-  const gdp = extractLatestNumeric(records, 1); // 經濟成長率（僅季底月份有值）
 
-  if (!cpi || !ppi || !gdp) throw new Error("台灣經濟指標資料欄位解析失敗");
+  if (!cpi || !ppi) throw new Error("台灣經濟指標資料欄位解析失敗");
 
   return [
     {
@@ -59,16 +76,46 @@ async function fetchTwEconIndicators() {
       period: ppi.period,
       isDemo: false,
     },
-    {
-      id: "gdp-tw",
-      region: "TW",
-      name: "GDP 成長率（年增率）",
-      value: `${gdp.value.toFixed(2)}%`,
-      trend: trendFromChange(gdp.value),
-      period: gdp.period,
-      isDemo: false,
-    },
   ];
+}
+
+function quarterToPeriod(timePeriod) {
+  const m = timePeriod.match(/^(\d{4})Q(\d)$/);
+  return m ? `${m[1]}-Q${m[2]}` : timePeriod;
+}
+
+// 台灣 GDP 成長率（主計總處官方資料，比勞動部轉發的月資料集更新更即時）
+async function fetchTwGdpGrowth() {
+  const metaRes = await fetch(DGBAS_GDP_META_URL);
+  if (!metaRes.ok) throw new Error(`GDP 中繼資料錯誤：${metaRes.status}`);
+  const meta = await metaRes.json();
+  const xmlUrl = meta.result.distribution[0].resourceDownloadUrl;
+
+  const res = await fetchInsecure(xmlUrl);
+  if (!res.ok) throw new Error(`GDP 資料下載錯誤：${res.status}`);
+  const xml = await res.text();
+
+  const obsBlocks = xml.match(/<Obs>[\s\S]*?<\/Obs>/g) || [];
+  let latest = null;
+  for (const block of obsBlocks) {
+    const item = (block.match(/<Item>([^<]*)<\/Item>/) || [, ""])[1];
+    if (item !== GDP_ITEM_NAME) continue;
+    const period = (block.match(/<TIME_PERIOD>([^<]*)<\/TIME_PERIOD>/) || [, ""])[1];
+    const value = (block.match(/<Item_VALUE>([^<]*)<\/Item_VALUE>/) || [, ""])[1];
+    if (!value) continue;
+    latest = { period, value: Number(value) }; // 檔案內為時間遞增排序，留下最後一筆非空值即為最新
+  }
+  if (!latest) throw new Error("找不到經濟成長率資料");
+
+  return {
+    id: "gdp-tw",
+    region: "TW",
+    name: "GDP 成長率（年增率）",
+    value: `${latest.value.toFixed(2)}%`,
+    trend: trendFromChange(latest.value),
+    period: quarterToPeriod(latest.period),
+    isDemo: false,
+  };
 }
 
 // 台灣景氣對策信號（國發會，data.gov.tw dataset 6099，資料包成 ZIP，裡面是 CSV）
@@ -159,6 +206,7 @@ router.get("/", async (req, res) => {
 
   const tasks = [
     { label: "台灣經濟指標", run: fetchTwEconIndicators },
+    { label: "台灣GDP成長率", run: fetchTwGdpGrowth },
     { label: "景氣對策信號", run: fetchBusinessSignal },
   ];
   if (!fredKey) {
