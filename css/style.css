@@ -260,7 +260,7 @@ img { max-width: 100%; display: block; }
 }
 .news-card h3 {
   font-size: 1.05rem;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.5;
 }
 .news-card h3 a:hover,
@@ -305,6 +305,7 @@ img { max-width: 100%; display: block; }
 .feature-row-title {
   color: var(--color-text-primary);
   font-size: 0.95rem;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -518,6 +519,50 @@ img { max-width: 100%; display: block; }
 }
 .change-up { color: var(--color-up); }
 .change-down { color: var(--color-down); }
+
+/* ==========================================================================
+   使用指南
+   ========================================================================== */
+.guide-grid {
+  display: grid;
+  gap: var(--space-4);
+  padding-bottom: var(--space-7);
+}
+.guide-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+}
+.guide-card h3 {
+  font-size: 1.05rem;
+  margin-bottom: var(--space-3);
+}
+.guide-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: var(--space-2) var(--space-3);
+}
+.guide-card dt {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+.guide-card dd {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+@media (max-width: 480px) {
+  .guide-card dl {
+    grid-template-columns: 1fr;
+  }
+  .guide-card dt {
+    margin-top: var(--space-2);
+  }
+}
 
 /* ==========================================================================
    Footer

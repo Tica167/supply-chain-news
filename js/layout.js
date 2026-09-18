@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { page: "memory", href: "memory.html", label: "記憶體 & 固態硬碟" },
   { page: "packaging", href: "packaging.html", label: "封測" },
   { page: "wafer", href: "wafer.html", label: "晶圓" },
+  { page: "guide", href: "guide.html", label: "使用指南" },
 ];
 
 function renderNavLinks(activePage) {

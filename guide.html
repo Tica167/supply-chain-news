@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>使用指南｜供應鏈新聞觀測站</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=23" />
+</head>
+<body data-page="guide">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="container">
+    <section class="page-header">
+      <h1>使用指南</h1>
+      <p>這個網站串接了幾個公開資料來源，這頁說明每一項資料實際從哪裡來、更新到什麼範圍、以及有哪些限制，方便你判斷可信度。</p>
+    </section>
+
+    <div class="guide-grid">
+      <div class="guide-card">
+        <h3>新聞</h3>
+        <dl>
+          <dt>來源</dt>
+          <dd>Bing 新聞搜尋（bing.com/news/search），不需要金鑰。每個料件群組用多個關鍵字分別查詢後合併。</dd>
+          <dt>範圍</dt>
+          <dd>每個群組涵蓋最近 30 天內的新聞，依關鍵字比對分類成「處理器／網卡模組／記憶體 & 固態硬碟／封測／晶圓」5 個群組，以及「市場分析／股市分析／供需／新品發表」4 種類型。</dd>
+          <dt>限制</dt>
+          <dd>群組與類型都是用標題關鍵字自動判斷，不是人工編輯，可能會有分類不準確的狀況。摘要文字是 Bing 提供的片段，不是我們改寫的內容。此功能僅供個人參考與內部使用，非商業用途。</dd>
+        </dl>
+      </div>
+
+      <div class="guide-card">
+        <h3>匯率（美元/台幣、日圓/台幣、美元/日圓）</h3>
+        <dl>
+          <dt>來源</dt>
+          <dd>Yahoo Finance 即時報價（TWD=X、JPY=X），不需要金鑰。</dd>
+          <dt>範圍</dt>
+          <dd>盤中即時匯率，漲跌幅是跟前一個交易日收盤價比較。</dd>
+          <dt>限制</dt>
+          <dd>這是市場即期匯率，不是銀行的牌告匯率，實際換匯（例如台灣銀行現金/即期買賣價）會有價差，不能直接當作換匯依據。</dd>
+        </dl>
+      </div>
+
+      <div class="guide-card">
+        <h3>台灣經濟指標</h3>
+        <dl>
+          <dt>來源</dt>
+          <dd>CPI、PPI：勞動部轉發行政院主計總處的月資料。GDP 成長率：主計總處官方季資料（國民所得統計）。景氣對策信號：國家發展委員會官方資料。都不需要金鑰。</dd>
+          <dt>範圍</dt>
+          <dd>CPI、PPI 每月更新；GDP 每季更新（3、6、9、12月為季底月，其他月份沒有數字）；景氣對策信號每月更新（燈號：🔴紅燈／🟠黃紅燈／🟢綠燈／🟡黃藍燈／🔵藍燈）。</dd>
+          <dt>限制</dt>
+          <dd>官方公布本身就有 1-2 個月的時間差，看到的月份不會是「當月」，是官方最新公布的那一期。台灣的採購經理人指數（PMI）沒有找到免費即時來源，目前沒有收錄。</dd>
+        </dl>
+      </div>
+
+      <div class="guide-card">
+        <h3>美國經濟指標</h3>
+        <dl>
+          <dt>來源</dt>
+          <dd>FRED（美國聯準會官方資料庫），需要你自己申請免費金鑰並填在 server/.env 裡。</dd>
+          <dt>範圍</dt>
+          <dd>CPI、PPI、GDP 成長率、聯邦基金有效利率，皆為官方最新公布期數。</dd>
+          <dt>限制</dt>
+          <dd>ISM 製造業 PMI 因為授權限制（2016年起 ISM 已把資料從FRED下架，需要付費訂閱才能取得），目前沒有收錄。若沒有設定金鑰，會顯示示範資料。</dd>
+        </dl>
+      </div>
+
+      <div class="guide-card">
+        <h3>美國市場情緒指標</h3>
+        <dl>
+          <dt>來源</dt>
+          <dd>CBOE 恐慌指數（VIX）：Yahoo Finance。CNN 貪婪與恐懼指數：CNN 非官方資料端點。都不需要金鑰。</dd>
+          <dt>範圍</dt>
+          <dd>盤中即時數值。</dd>
+          <dt>限制</dt>
+          <dd>這兩個都不是官方正式提供的公開 API，是業界常用的非正式資料端點，理論上對方隨時可能調整或關閉，屆時會自動改顯示示範資料。</dd>
+        </dl>
+      </div>
+
+      <div class="guide-card">
+        <h3>示範資料是什麼</h3>
+        <dl>
+          <dt>什麼時候</dt>
+          <dd>當上述任何一個真實資料來源暫時連不上、或回應異常時，該項目會自動改用網站內建的虛構示範內容，讓畫面不會空白。</dd>
+          <dt>怎麼看到</dt>
+          <dd>示範新聞會有「示範資料」標籤；頁面上方也會出現橘色提示列，列出目前是哪些項目改用示範資料、原因是什麼。</dd>
+          <dt>提醒</dt>
+          <dd>示範資料是虛構內容，數字和新聞標題都不是真的，不能拿來做任何判斷或決策依據。</dd>
+        </dl>
+      </div>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/layout.js?v=23"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => initLayout("guide"));
+  </script>
+</body>
+</html>
