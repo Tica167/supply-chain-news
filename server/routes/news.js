@@ -148,12 +148,14 @@ router.get("/", async (req, res) => {
     }
   });
 
-  // 同一篇新聞可能被多個群組的關鍵字查詢重複抓到，先用真實網址跨群組去重，
+  // 同一篇新聞可能被多個群組/關鍵字查詢重複抓到，且轉址網址常帶有不同的追蹤參數，
+  // 光比對網址攔不住重複，改成比對標題（去除空白後）來跨群組去重，
   // 再依標題重新判斷最終該歸屬的群組
   const seen = new Set();
   const deduped = allItems.filter((item) => {
-    if (seen.has(item.url)) return false;
-    seen.add(item.url);
+    const key = item.title.replace(/\s+/g, "");
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
   deduped.forEach((item) => {
