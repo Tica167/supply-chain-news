@@ -511,6 +511,11 @@ img { max-width: 100%; display: block; }
   font-size: 0.62rem;
   margin-left: 2px;
 }
+.snapshot-period {
+  font-size: 0.62rem;
+  color: var(--color-text-tertiary);
+  margin-top: 1px;
+}
 .change-up { color: var(--color-up); }
 .change-down { color: var(--color-down); }
 

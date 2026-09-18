@@ -270,12 +270,15 @@ function renderSnapshotRateRow(item) {
 function renderSnapshotIndicatorRow(item) {
   const { arrow, cls } = trendArrow(item.trend);
   return `
-    <li class="snapshot-row">
-      <span class="snapshot-label">${item.name}</span>
-      <span class="snapshot-value-wrap">
-        <span class="snapshot-value">${item.value}</span>
-        <span class="snapshot-trend ${cls}">${arrow}</span>
-      </span>
+    <li class="indicator-row">
+      <div class="snapshot-row">
+        <span class="snapshot-label">${item.name}</span>
+        <span class="snapshot-value-wrap">
+          <span class="snapshot-value">${item.value}</span>
+          <span class="snapshot-trend ${cls}">${arrow}</span>
+        </span>
+      </div>
+      <div class="snapshot-period">資料時間：${item.period}</div>
     </li>
   `;
 }

@@ -73,7 +73,7 @@ const ECONOMIC_INDICATORS = [
   { id: "cpi-tw", region: "TW", name: "CPI 消費者物價指數年增率", value: "2.20%", trend: "up", period: "2026-05", isDemo: true },
   { id: "ppi-tw", region: "TW", name: "PPI 生產者物價指數年增率", value: "14.11%", trend: "up", period: "2026-05", isDemo: true },
   { id: "gdp-tw", region: "TW", name: "GDP 成長率（年增率）", value: "14.55%", trend: "up", period: "2026-03", isDemo: true },
-  { id: "business-signal-tw", region: "TW", name: "景氣對策信號", value: "2026-05 🟢 綠燈", trend: "flat", period: "2026-05", isDemo: true },
+  { id: "business-signal-tw", region: "TW", name: "景氣對策信號", value: "🟢 綠燈", trend: "flat", period: "2026-05", isDemo: true },
   { id: "cpi-us", region: "US", name: "CPI 消費者物價指數年增率", value: "2.9%", trend: "flat", period: "2026-08", isDemo: true },
   { id: "ppi-us", region: "US", name: "PPI 生產者物價指數年增率", value: "1.8%", trend: "flat", period: "2026-08", isDemo: true },
   { id: "rate-us", region: "US", name: "聯邦基金有效利率", value: "4.33%", trend: "down", period: "2026-08", isDemo: true },
