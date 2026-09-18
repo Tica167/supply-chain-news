@@ -9,13 +9,14 @@ const GROUP_LABELS = {
   wafer: "晶圓",
 };
 
-// Google 新聞 RSS 搜尋查詢（中文關鍵字，OR 語法與 Google 搜尋相同）
-const GROUP_QUERIES = {
-  processor: "處理器 OR CPU OR 英特爾 OR AMD OR 輝達 Nvidia",
-  network: "網卡晶片 OR 網通晶片 OR 交換器晶片 OR 光通訊模組 OR Marvell OR Broadcom",
-  memory: "記憶體 OR DRAM OR NAND OR 固態硬碟 OR SSD OR 三星記憶體 OR SK海力士 OR 美光",
-  packaging: "半導體封測 OR 先進封裝 OR CoWoS OR 日月光 OR 矽品",
-  wafer: "晶圓代工 OR 台積電 OR 聯電 OR 三星晶圓",
+// Bing 新聞 RSS 不支援「OR」多關鍵字合併查詢，所以每個關鍵字要分開查，
+// 結果合併後再去重
+const GROUP_KEYWORDS = {
+  processor: ["處理器", "CPU", "英特爾", "AMD", "輝達"],
+  network: ["網卡晶片", "網通晶片", "交換器晶片", "光通訊模組", "Marvell", "Broadcom"],
+  memory: ["記憶體", "DRAM", "NAND", "固態硬碟", "SK海力士", "美光"],
+  packaging: ["半導體封測", "先進封裝", "CoWoS", "日月光", "矽品"],
+  wafer: ["晶圓代工", "台積電", "聯電", "三星晶圓"],
 };
 
 const NEW_PRODUCT_KEYWORDS = ["發表", "推出", "亮相", "上市", "發布", "問世", "量產", "首發"];
@@ -36,62 +37,96 @@ function decodeEntities(str) {
     .replace(/&#39;/g, "'");
 }
 
+function stripHtml(str) {
+  return str.replace(/<[^>]+>/g, "");
+}
+
+function cleanText(str) {
+  return stripHtml(decodeEntities(str || "")).trim();
+}
+
 function parseRssItems(xml) {
   const items = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
   let match;
   while ((match = itemRegex.exec(xml))) {
     const block = match[1];
-    const title = decodeEntities((block.match(/<title>([\s\S]*?)<\/title>/) || [, ""])[1]);
+    const title = (block.match(/<title>([\s\S]*?)<\/title>/) || [, ""])[1];
     const link = (block.match(/<link>([\s\S]*?)<\/link>/) || [, ""])[1];
+    const description = (block.match(/<description>([\s\S]*?)<\/description>/) || [, ""])[1];
     const pubDate = (block.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [, ""])[1];
-    const source = decodeEntities((block.match(/<source[^>]*>([\s\S]*?)<\/source>/) || [, ""])[1]);
-    items.push({ title, link, pubDate, source });
+    items.push({ title, link, description, pubDate });
   }
   return items;
 }
 
-function cleanTitle(title, source) {
-  // Google 新聞標題結尾固定是「- 來源」，用已知的來源名稱精確比對移除，
-  // 避免用通用規則誤砍標題內文本身就有的「- 」片語
-  const suffix = `- ${source}`;
-  if (title.endsWith(suffix)) {
-    return title.slice(0, -suffix.length).replace(/\s*-\s*$/, "").trim();
+function extractRealUrl(bingLink) {
+  try {
+    const linkUrl = new URL(decodeEntities(bingLink));
+    const real = linkUrl.searchParams.get("url");
+    return real ? decodeURIComponent(real) : bingLink;
+  } catch {
+    return bingLink;
   }
-  return title.trim();
 }
 
-function formatDate(d) {
-  return d.toISOString().slice(0, 10);
+function sourceNameFromUrl(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "未知來源";
+  }
 }
 
-async function fetchGroupNews(group) {
-  const today = new Date();
-  const monthAgo = new Date();
-  monthAgo.setDate(monthAgo.getDate() - 30);
-
-  const query = encodeURIComponent(`${GROUP_QUERIES[group]} after:${formatDate(monthAgo)} before:${formatDate(today)}`);
-  const url = `https://news.google.com/rss/search?q=${query}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+async function fetchKeywordNews(group, keyword) {
+  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(keyword)}&format=rss&setlang=zh-tw&cc=TW`;
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
-  if (!res.ok) throw new Error(`Google 新聞錯誤：${res.status}`);
+  if (!res.ok) throw new Error(`Bing 新聞錯誤（${keyword}）：${res.status}`);
   const xml = await res.text();
   const items = parseRssItems(xml);
 
-  return items.map((item, i) => {
-    const title = cleanTitle(item.title, item.source);
+  return items.map((item) => {
+    const title = cleanText(item.title);
+    const realUrl = extractRealUrl(item.link);
     const date = item.pubDate ? new Date(item.pubDate).toISOString().slice(0, 10) : "";
     return {
-      id: `${group}-${i}-${Date.now()}`,
       group,
       type: classifyType(title),
       title,
-      summary: "（Google 新聞標題擷取，點擊可查看原始報導全文）",
+      summary: cleanText(item.description) || "（Bing 新聞未提供摘要，點擊可查看原始報導全文）",
       date,
-      source: `${item.source || "未知來源"}（Google 新聞，分類為關鍵字比對，可能不完全準確）`,
-      url: item.link,
+      source: `${sourceNameFromUrl(realUrl)}（Bing 新聞，分類為關鍵字比對，可能不完全準確）`,
+      url: realUrl,
       isDemo: false,
     };
   });
+}
+
+async function fetchGroupNews(group) {
+  const keywords = GROUP_KEYWORDS[group];
+  const settled = await Promise.allSettled(keywords.map((k) => fetchKeywordNews(group, k)));
+
+  const merged = [];
+  settled.forEach((outcome) => {
+    if (outcome.status === "fulfilled") merged.push(...outcome.value);
+  });
+  if (merged.length === 0 && settled.every((s) => s.status === "rejected")) {
+    throw settled[0].reason;
+  }
+
+  const seen = new Set();
+  const deduped = merged.filter((item) => {
+    if (seen.has(item.url)) return false;
+    seen.add(item.url);
+    return true;
+  });
+
+  deduped.sort((a, b) => (a.date < b.date ? 1 : -1));
+  deduped.forEach((item, i) => {
+    item.id = `${group}-${i}-${Date.now()}`;
+  });
+
+  return deduped;
 }
 
 router.get("/", async (req, res) => {
