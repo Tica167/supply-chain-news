@@ -94,13 +94,14 @@ async function fetchBusinessSignal() {
   const light = lastCols[8];
   if (!/^\d{6}$/.test(period) || !light) throw new Error("景氣對策信號資料格式異常");
 
+  const periodStr = periodFromYyyymm(period);
   return {
     id: "business-signal-tw",
     region: "TW",
     name: "景氣對策信號",
-    value: `${LIGHT_ICONS[light] || ""} ${light}燈`,
+    value: `${periodStr} ${LIGHT_ICONS[light] || ""} ${light}燈`,
     trend: "flat",
-    period: periodFromYyyymm(period),
+    period: periodStr,
     isDemo: false,
   };
 }
