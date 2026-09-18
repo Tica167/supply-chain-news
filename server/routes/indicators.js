@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 
-const CBC_URL = "https://cpx.cbc.gov.tw/api/OpenData/DataSet?set_id=6022&index=0";
 const TW_ECON_URL = "https://apiservice.mol.gov.tw/OdService/download/A17030000J-000016-xC8";
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
 
@@ -13,39 +12,6 @@ function trendFromChange(change) {
   if (change > 0) return "up";
   if (change < 0) return "down";
   return "flat";
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// 台灣央行重貼現率 API 常會回傳空內容（該平台 CDN 快取問題），失敗時重試幾次
-async function fetchCbcRediscountRate(retries = 3) {
-  let list = null;
-  for (let attempt = 0; attempt < retries; attempt++) {
-    const res = await fetch(CBC_URL);
-    if (!res.ok) throw new Error(`央行 API 錯誤：${res.status}`);
-    const text = await res.text();
-    if (text) {
-      list = JSON.parse(text);
-      break;
-    }
-    await sleep(500);
-  }
-  if (!Array.isArray(list) || list.length === 0) throw new Error("央行 API 目前沒有回傳資料，請稍後再試");
-  const latest = list[0];
-  const prev = list[1] || latest;
-  const value = Number(latest["重貼現率"]);
-  const prevValue = Number(prev["重貼現率"]);
-  return {
-    id: "rate-tw",
-    region: "TW",
-    name: "央行重貼現率",
-    value: `${value.toFixed(2)}%`,
-    trend: trendFromChange(value - prevValue),
-    period: latest["調整日期"].replace(/\//g, "-"),
-    isDemo: false,
-  };
 }
 
 // 台灣 CPI / PPI / GDP 成長率（勞動部轉發主計總處月資料，欄位用「陣列順序」讀取，避免中文欄名編碼問題）
@@ -154,10 +120,7 @@ router.get("/", async (req, res) => {
   const fredKey = process.env.FRED_API_KEY;
   const results = { indicators: [], errors: [] };
 
-  const tasks = [
-    { label: "台灣經濟指標", run: fetchTwEconIndicators },
-    { label: "央行重貼現率", run: fetchCbcRediscountRate },
-  ];
+  const tasks = [{ label: "台灣經濟指標", run: fetchTwEconIndicators }];
   if (!fredKey) {
     results.errors.push("美國經濟指標：尚未設定 FRED_API_KEY，請到 server/.env 填入金鑰");
   } else {
