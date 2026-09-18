@@ -515,16 +515,16 @@ img { max-width: 100%; display: block; }
    Hero (首頁)
    ========================================================================== */
 .hero {
-  padding: var(--space-8) 0 var(--space-6);
+  padding: var(--space-5) 0 var(--space-3);
   text-align: center;
 }
 .hero h1 {
-  font-size: 2.1rem;
+  font-size: 1.7rem;
 }
 .hero p {
   color: var(--color-text-secondary);
-  margin-top: var(--space-3);
-  font-size: 1rem;
+  margin-top: var(--space-2);
+  font-size: 0.92rem;
   max-width: 640px;
   margin-left: auto;
   margin-right: auto;

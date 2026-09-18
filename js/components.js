@@ -123,6 +123,37 @@ function renderPagination(currentPage, totalPages) {
 
 const CATEGORY_PAGE_SIZE = 9;
 
+// 中英文同義詞，讓搜尋「Intel」也能搜到「英特爾」的新聞（反向也成立）
+const SEARCH_SYNONYM_GROUPS = [
+  ["intel", "英特爾"],
+  ["nvidia", "輝達"],
+  ["amd", "超微"],
+  ["broadcom", "博通"],
+  ["marvell", "邁威爾"],
+  ["tsmc", "台積電", "台積"],
+  ["samsung", "三星"],
+  ["sk hynix", "sk海力士", "海力士"],
+  ["micron", "美光"],
+  ["umc", "聯電"],
+  ["globalfoundries", "格芯"],
+  ["ase", "日月光"],
+  ["qualcomm", "高通"],
+  ["apple", "蘋果"],
+];
+
+function expandSearchTerms(term) {
+  const lower = term.toLowerCase();
+  const expanded = new Set([lower]);
+  SEARCH_SYNONYM_GROUPS.forEach((group) => {
+    const hit = group.some((w) => {
+      const wLower = w.toLowerCase();
+      return wLower === lower || wLower.includes(lower) || lower.includes(wLower);
+    });
+    if (hit) group.forEach((w) => expanded.add(w.toLowerCase()));
+  });
+  return Array.from(expanded);
+}
+
 function initCategoryPage(group) {
   const listEl = document.getElementById("news-list");
   const filterBarEl = document.getElementById("filter-bar");
@@ -135,10 +166,12 @@ function initCategoryPage(group) {
 
   function getFilteredNews() {
     const groupNews = NEWS.filter((n) => n.group === group).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
-    const term = searchTerm.trim().toLowerCase();
+    const term = searchTerm.trim();
+    const searchTerms = term ? expandSearchTerms(term) : [];
     return groupNews.filter((n) => {
       const typeMatch = activeType === "all" || n.type === activeType;
-      const searchMatch = !term || n.title.toLowerCase().includes(term);
+      const titleLower = n.title.toLowerCase();
+      const searchMatch = !term || searchTerms.some((t) => titleLower.includes(t));
       return typeMatch && searchMatch;
     });
   }
