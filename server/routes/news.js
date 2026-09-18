@@ -90,14 +90,15 @@ router.get("/", async (req, res) => {
   const groups = Object.keys(GROUP_LABELS);
   const results = { news: [], errors: [] };
 
-  for (const group of groups) {
-    try {
-      const items = await fetchGroupNews(group);
-      results.news.push(...items);
-    } catch (err) {
-      results.errors.push(`${GROUP_LABELS[group]}新聞：${err.message}`);
+  const settled = await Promise.allSettled(groups.map((group) => fetchGroupNews(group)));
+  settled.forEach((outcome, i) => {
+    const group = groups[i];
+    if (outcome.status === "fulfilled") {
+      results.news.push(...outcome.value);
+    } else {
+      results.errors.push(`${GROUP_LABELS[group]}新聞：${outcome.reason.message}`);
     }
-  }
+  });
 
   res.json(results);
 });

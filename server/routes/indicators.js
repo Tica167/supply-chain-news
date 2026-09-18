@@ -154,29 +154,24 @@ router.get("/", async (req, res) => {
   const fredKey = process.env.FRED_API_KEY;
   const results = { indicators: [], errors: [] };
 
-  try {
-    const twEcon = await fetchTwEconIndicators();
-    results.indicators.push(...twEcon);
-  } catch (err) {
-    results.errors.push(`台灣經濟指標：${err.message}`);
-  }
-
-  try {
-    results.indicators.push(await fetchCbcRediscountRate());
-  } catch (err) {
-    results.errors.push(`央行重貼現率：${err.message}`);
-  }
-
+  const tasks = [
+    { label: "台灣經濟指標", run: fetchTwEconIndicators },
+    { label: "央行重貼現率", run: fetchCbcRediscountRate },
+  ];
   if (!fredKey) {
     results.errors.push("美國經濟指標：尚未設定 FRED_API_KEY，請到 server/.env 填入金鑰");
   } else {
-    try {
-      const usEcon = await fetchUsEconIndicators(fredKey);
-      results.indicators.push(...usEcon);
-    } catch (err) {
-      results.errors.push(`美國經濟指標：${err.message}`);
-    }
+    tasks.push({ label: "美國經濟指標", run: () => fetchUsEconIndicators(fredKey) });
   }
+
+  const settled = await Promise.allSettled(tasks.map((t) => t.run()));
+  settled.forEach((outcome, i) => {
+    if (outcome.status === "fulfilled") {
+      results.indicators.push(...[].concat(outcome.value));
+    } else {
+      results.errors.push(`${tasks[i].label}：${outcome.reason.message}`);
+    }
+  });
 
   res.json(results);
 });

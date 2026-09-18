@@ -1,5 +1,6 @@
 /* ==========================================================================
    向後端（server/）抓取真實資料，失敗時自動保留 data.js 裡的示範資料當備援
+   四個來源平行抓取（不互相等待），減少等待時間
    ========================================================================== */
 
 async function fetchJson(url) {
@@ -25,9 +26,7 @@ function replaceNewsForGroups(liveNewsItems) {
   NEWS.push(...liveNewsItems);
 }
 
-async function loadLiveData() {
-  const notices = [];
-
+async function loadRates(notices) {
   try {
     const data = await fetchJson("/api/rates");
     if (data.rates) {
@@ -38,7 +37,9 @@ async function loadLiveData() {
   } catch (err) {
     notices.push("匯率：無法連上後端伺服器，顯示示範資料");
   }
+}
 
+async function loadIndicators(notices) {
   try {
     const data = await fetchJson("/api/indicators");
     if (data.indicators && data.indicators.length) replaceById(ECONOMIC_INDICATORS, data.indicators);
@@ -46,7 +47,9 @@ async function loadLiveData() {
   } catch (err) {
     notices.push("經濟指標：無法連上後端伺服器，顯示示範資料");
   }
+}
 
+async function loadSentiment(notices) {
   try {
     const data = await fetchJson("/api/sentiment");
     if (data.sentiment && data.sentiment.length) replaceById(MARKET_SENTIMENT, data.sentiment);
@@ -54,7 +57,9 @@ async function loadLiveData() {
   } catch (err) {
     notices.push("市場情緒指標：無法連上後端伺服器，顯示示範資料");
   }
+}
 
+async function loadNews(notices) {
   try {
     const data = await fetchJson("/api/news");
     if (data.news && data.news.length) replaceNewsForGroups(data.news);
@@ -62,6 +67,10 @@ async function loadLiveData() {
   } catch (err) {
     notices.push("新聞：無法連上後端伺服器，顯示示範新聞");
   }
+}
 
+async function loadLiveData() {
+  const notices = [];
+  await Promise.all([loadRates(notices), loadIndicators(notices), loadSentiment(notices), loadNews(notices)]);
   return notices;
 }
