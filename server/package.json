@@ -1,0 +1,14 @@
+{
+  "name": "supply-chain-news-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "供應鏈新聞觀測站 後端：串接匯率、經濟指標、市場情緒、新聞的真實資料來源",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
