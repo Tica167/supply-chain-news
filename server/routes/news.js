@@ -104,8 +104,12 @@ function isStockProfileCard(title, summary) {
   return COMPANY_CARD_TITLE.test(title.trim()) || STOCK_DISCLAIMER_SNIPPET.test(summary);
 }
 
+// qft=sortbydate="1"+interval="30" 讓 Bing 依時間排序、只回傳最近30天，
+// 不加這個參數 Bing 預設是「相關性」排序，可能挖出好幾年前的舊新聞
+const BING_RECENT_30D_QFT = 'qft=sortbydate%3D%221%22%2Binterval%3D%2230%22';
+
 async function fetchKeywordNews(group, keyword) {
-  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(keyword)}&format=rss&setlang=zh-tw&cc=TW`;
+  const url = `https://www.bing.com/news/search?q=${encodeURIComponent(keyword)}&${BING_RECENT_30D_QFT}&format=rss&setlang=zh-tw&cc=TW`;
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
   if (!res.ok) throw new Error(`Bing 新聞錯誤（${keyword}）：${res.status}`);
   const xml = await res.text();
