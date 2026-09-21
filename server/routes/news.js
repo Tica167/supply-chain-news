@@ -94,6 +94,16 @@ function sourceNameFromUrl(url) {
   }
 }
 
+// Bing 新聞搜尋結果裡偶爾會混進「股票公司資訊卡」而不是真的新聞文章——
+// 標題就只是公司英文全名（例如「Marvell Technology, Inc.」），摘要是財務數據的
+// 制式免責聲明，不是報導內容，要濾掉
+const COMPANY_CARD_TITLE = /^[A-Za-z0-9&.,'\-\s]+,\s*(Inc|Ltd|Corp|Co|PLC|LLC)\.?$/i;
+const STOCK_DISCLAIMER_SNIPPET = /Trailing Twelve Months|TTM\s*\(/i;
+
+function isStockProfileCard(title, summary) {
+  return COMPANY_CARD_TITLE.test(title.trim()) || STOCK_DISCLAIMER_SNIPPET.test(summary);
+}
+
 async function fetchKeywordNews(group, keyword) {
   const url = `https://www.bing.com/news/search?q=${encodeURIComponent(keyword)}&format=rss&setlang=zh-tw&cc=TW`;
   const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -101,21 +111,24 @@ async function fetchKeywordNews(group, keyword) {
   const xml = await res.text();
   const items = parseRssItems(xml);
 
-  return items.map((item) => {
-    const title = cleanText(item.title);
-    const realUrl = extractRealUrl(item.link);
-    const date = item.pubDate ? new Date(item.pubDate).toISOString().slice(0, 10) : "";
-    return {
-      group,
-      type: classifyType(title),
-      title,
-      summary: cleanText(item.description) || "（Bing 新聞未提供摘要，點擊可查看原始報導全文）",
-      date,
-      source: `${sourceNameFromUrl(realUrl)}（Bing 新聞，分類為關鍵字比對，可能不完全準確）`,
-      url: realUrl,
-      isDemo: false,
-    };
-  });
+  return items
+    .map((item) => {
+      const title = cleanText(item.title);
+      const summary = cleanText(item.description) || "（Bing 新聞未提供摘要，點擊可查看原始報導全文）";
+      const realUrl = extractRealUrl(item.link);
+      const date = item.pubDate ? new Date(item.pubDate).toISOString().slice(0, 10) : "";
+      return {
+        group,
+        type: classifyType(title),
+        title,
+        summary,
+        date,
+        source: `${sourceNameFromUrl(realUrl)}（Bing 新聞，分類為關鍵字比對，可能不完全準確）`,
+        url: realUrl,
+        isDemo: false,
+      };
+    })
+    .filter((item) => !isStockProfileCard(item.title, item.summary));
 }
 
 async function fetchGroupNews(group) {
