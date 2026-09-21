@@ -69,8 +69,19 @@ async function loadNews(notices) {
   }
 }
 
-async function loadLiveData() {
+// 四項各自抓完就各自回報，不用等最慢的那個（通常是新聞，因為要查的關鍵字最多）
+// onCategoryDone(name) 會在每一項完成時被呼叫一次（name 是 "rates"/"indicators"/"sentiment"/"news"），
+// 讓畫面只重新畫「跟這項資料有關」的部分，而不是整頁重畫
+async function loadLiveData(onCategoryDone) {
   const notices = [];
-  await Promise.all([loadRates(notices), loadIndicators(notices), loadSentiment(notices), loadNews(notices)]);
+  const notify = (name) => {
+    if (onCategoryDone) onCategoryDone(name);
+  };
+  await Promise.all([
+    loadRates(notices).then(() => notify("rates")),
+    loadIndicators(notices).then(() => notify("indicators")),
+    loadSentiment(notices).then(() => notify("sentiment")),
+    loadNews(notices).then(() => notify("news")),
+  ]);
   return notices;
 }
