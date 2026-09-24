@@ -1,6 +1,15 @@
 const express = require("express");
 const router = express.Router();
 
+// pubDate 是 UTC 時間，台灣比 UTC 快 8 小時；直接取 UTC 的日期部分，
+// 會讓台灣時間0-8點發布的新聞被歸到「前一天」，這裡先加8小時再取日期
+function toTaipeiDate(pubDateStr) {
+  if (!pubDateStr) return "";
+  const utcMs = new Date(pubDateStr).getTime();
+  if (Number.isNaN(utcMs)) return "";
+  return new Date(utcMs + 8 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
 const GROUP_LABELS = {
   processor: "處理器",
   network: "網卡模組",
@@ -122,7 +131,7 @@ async function fetchKeywordNews(group, keyword) {
       const title = cleanText(item.title);
       const summary = cleanText(item.description) || "（Bing 新聞未提供摘要，點擊可查看原始報導全文）";
       const realUrl = extractRealUrl(item.link);
-      const date = item.pubDate ? new Date(item.pubDate).toISOString().slice(0, 10) : "";
+      const date = toTaipeiDate(item.pubDate);
       return {
         group,
         type: classifyType(title),
