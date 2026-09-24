@@ -90,6 +90,7 @@ function renderFilterBar(activeType) {
     { type: "stock-analysis", label: "股市分析" },
     { type: "supply-demand", label: "供需" },
     { type: "new-product", label: "新品發表" },
+    { type: "patent-dispute", label: "侵權/專利" },
   ];
   return `
     <div class="filter-bar type-filter-bar" role="group" aria-label="新聞類型篩選">

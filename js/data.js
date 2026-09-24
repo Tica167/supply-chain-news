@@ -15,6 +15,7 @@ const TYPE_LABELS = {
   "stock-analysis": "股市分析",
   "supply-demand": "供需",
   "new-product": "新品發表",
+  "patent-dispute": "侵權/專利",
 };
 
 const NEWS = [

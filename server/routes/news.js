@@ -14,7 +14,7 @@ const GROUP_LABELS = {
 const GROUP_KEYWORDS = {
   processor: ["處理器", "CPU", "英特爾", "AMD", "輝達", "Nvidia", "Intel"],
   network: ["網卡晶片", "網通晶片", "交換器晶片", "光通訊模組", "Marvell", "Broadcom"],
-  memory: ["記憶體", "DRAM", "NAND", "固態硬碟", "SK海力士", "美光"],
+  memory: ["記憶體", "DRAM", "NAND", "固態硬碟", "SK海力士", "美光", "長江存儲", "長鑫存儲"],
   packaging: ["半導體封測", "先進封裝", "CoWoS", "日月光", "矽品"],
   wafer: ["晶圓代工", "台積電", "聯電", "三星晶圓"],
 };
@@ -25,9 +25,11 @@ const STOCK_KEYWORDS = [
   "股價", "股票", "股市", "大漲", "大跌", "收盤", "開盤", "盤中", "ADR",
   "台股", "美股", "漲停", "跌停", "市值", "本益比", "法人", "外資",
 ];
+const PATENT_KEYWORDS = ["專利", "侵權", "訴訟", "禁令", "禁售", "告贏", "告捷", "智財", "上訴", "判決"];
 
 function classifyType(title) {
   if (NEW_PRODUCT_KEYWORDS.some((k) => title.includes(k))) return "new-product";
+  if (PATENT_KEYWORDS.some((k) => title.includes(k))) return "patent-dispute";
   if (SUPPLY_DEMAND_KEYWORDS.some((k) => title.includes(k))) return "supply-demand";
   if (STOCK_KEYWORDS.some((k) => title.includes(k))) return "stock-analysis";
   return "market-analysis";
