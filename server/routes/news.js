@@ -115,6 +115,13 @@ function isStockProfileCard(title, summary) {
   return COMPANY_CARD_TITLE.test(title.trim()) || STOCK_DISCLAIMER_SNIPPET.test(summary);
 }
 
+// Bing 有時會回傳跟查詢關鍵字完全不相關的結果（語意/模糊比對誤配），
+// 標題和摘要都要檢查一次，確認查詢用的關鍵字真的有出現，才收下這篇
+function matchesQueriedKeyword(title, summary, keyword) {
+  const needle = keyword.toLowerCase();
+  return title.toLowerCase().includes(needle) || summary.toLowerCase().includes(needle);
+}
+
 // qft=sortbydate="1"+interval="30" 讓 Bing 依時間排序、只回傳最近30天，
 // 不加這個參數 Bing 預設是「相關性」排序，可能挖出好幾年前的舊新聞
 const BING_RECENT_30D_QFT = 'qft=sortbydate%3D%221%22%2Binterval%3D%2230%22';
@@ -143,7 +150,8 @@ async function fetchKeywordNews(group, keyword) {
         isDemo: false,
       };
     })
-    .filter((item) => !isStockProfileCard(item.title, item.summary));
+    .filter((item) => !isStockProfileCard(item.title, item.summary))
+    .filter((item) => matchesQueriedKeyword(item.title, item.summary, keyword));
 }
 
 async function fetchGroupNews(group) {
