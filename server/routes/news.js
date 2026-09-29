@@ -24,7 +24,7 @@ const GROUP_KEYWORDS = {
   processor: ["處理器", "CPU", "英特爾", "AMD", "輝達", "Nvidia", "Intel"],
   network: ["網卡晶片", "網通晶片", "交換器晶片", "光通訊模組", "Marvell", "Broadcom"],
   memory: ["記憶體", "DRAM", "NAND", "固態硬碟", "SK海力士", "美光", "長江存儲", "長鑫存儲"],
-  packaging: ["半導體封測", "先進封裝", "CoWoS", "日月光", "矽品"],
+  packaging: ["封測", "先進封裝", "CoWoS", "日月光", "矽品", "京元電子", "南茂", "力成", "矽格", "頎邦", "菱生", "超豐"],
   wafer: ["晶圓代工", "台積電", "聯電", "三星晶圓"],
 };
 
