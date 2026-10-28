@@ -119,6 +119,21 @@ function isStockProfileCard(title, summary) {
   return COMPANY_CARD_TITLE.test(title.trim()) || STOCK_DISCLAIMER_SNIPPET.test(summary);
 }
 
+// 網站只給中文／英文使用者看，Bing 查關鍵字（尤其是公司英文名）常常連帶撈到
+// 日文、韓文、希臘文、俄文、德文、荷蘭文等其他語言的報導，要濾掉——
+// 用到非拉丁字母／非中日韓文字（假名、韓文、希臘文、西里爾字母、泰文、阿拉伯文…）
+// 就直接排除；都是拉丁字母、沒有中文字時，用常見的德文/荷蘭文/法文虛詞
+// （例如 van、het、für、dans）抓出非英文的拉丁語系標題
+const NON_LATIN_NON_CJK_SCRIPT = /[぀-ヿ가-힣Ͱ-ϿЀ-ӿ฀-๿؀-ۿ]/;
+const CJK_CHAR = /[一-鿿]/;
+const EUROPEAN_STOPWORDS = /\b(der|die|das|und|für|von|auf|aus|bei|nach|wird|werden|ist|sind|sich|ein|eine|einen|nicht|kann|het|een|van|voor|met|aan|uit|door|naar|dat|deze|zijn|wordt|worden|mee|geen|nog|bij|le|la|les|des|du|dans|pour|avec|sur|être|qui|que|pas)\b/i;
+
+function isNonTargetLanguage(title) {
+  if (NON_LATIN_NON_CJK_SCRIPT.test(title)) return true;
+  if (CJK_CHAR.test(title)) return false;
+  return EUROPEAN_STOPWORDS.test(title);
+}
+
 // Bing 有時會回傳跟查詢關鍵字完全不相關的結果（語意/模糊比對誤配），
 // 標題和摘要都要檢查一次，確認查詢用的關鍵字真的有出現，才收下這篇
 function matchesQueriedKeyword(title, summary, keyword) {
@@ -155,7 +170,8 @@ async function fetchKeywordNews(group, keyword) {
       };
     })
     .filter((item) => !isStockProfileCard(item.title, item.summary))
-    .filter((item) => matchesQueriedKeyword(item.title, item.summary, keyword));
+    .filter((item) => matchesQueriedKeyword(item.title, item.summary, keyword))
+    .filter((item) => !isNonTargetLanguage(item.title));
 }
 
 async function fetchGroupNews(group) {
